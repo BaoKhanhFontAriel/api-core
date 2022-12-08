@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.concurrent.TimeoutException;
 
 
@@ -23,6 +24,7 @@ public class Core {
 
 
     private static final int sleep = 3000;
+
     public static void main(String[] args) throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
@@ -45,13 +47,12 @@ public class Core {
                 CustomerRequest customerRquest = new Gson().fromJson(json, CustomerRequest.class);
 
                 pushToRedis(customerRquest);
-
-                AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-                        .Builder()
-                        .correlationId(delivery.getProperties().getCorrelationId())
-                        .build();
-
-
+                pushtoDatabase(customerRquest);
+//
+//                AMQP.BasicProperties replyProps = new AMQP.BasicProperties
+//                        .Builder()
+//                        .correlationId(delivery.getProperties().getCorrelationId())
+//                        .build();
 
 
             } catch (SQLException e) {
@@ -64,42 +65,48 @@ public class Core {
 //
 //            }
         };
+
+        channel.basicConsume(QUEUE_NAME, false, deliverCallback, (consumerTag -> {}));
+
     }
 
 
-    public static void pushToRedis(CustomerRequest customerRequest){
+    public static void pushToRedis(CustomerRequest customerRequest) {
         log.info("start connect to jedis");
         Jedis jedis = new Jedis("http://localhost:6379");
         log.info("connect to jedis succeful");
         jedis.lpush(customerRequest.getToken(), customerRequest.getJson());
+        log.info("push to jedis succefull");
+
     }
 
     public static void pushtoDatabase(CustomerRequest customerRequest) throws SQLException {
-
+        log.info("push to database!");
         String data = customerRequest.getJson();
 
         JSONObject jsonObject = new JSONObject(data);
         String customerName = jsonObject.getString("customerName");
-        int rescode =  jsonObject.getInt("rescode");
+        int rescode = jsonObject.getInt("rescode");
         int amount = jsonObject.getInt("amount");
-        int debitAmount = jsonObject.getInt("debitAmount");
-        int realAmount = jsonObject.getInt("realAmount");
+        double debitAmount = jsonObject.getDouble("debitAmount");
+        double realAmount = jsonObject.getDouble("realAmount");
         String payDate = jsonObject.getString("payDate");
-        String sysdate = jsonObject.getString("sysdate");
 
         //  insert to database
         String sql = "CALL PKG_CUSTOMER.ADD_NEW_CUSTOMER(?,?,?,?,?,?,?,?)";
         PreparedStatement st = oracleConn.prepareStatement(sql);
-        st.setString(1, sysdate);
+        st.setString(1, LocalDate.now().toString());
         st.setString(2, payDate);
-        st.setLong(3, realAmount);
-        st.setLong(4, debitAmount);
-        st.setString(5, data);
-        st.setLong(6, rescode);
-        st.setString(7, customerName);
+        st.setDouble(3, realAmount);
+        st.setDouble(4, debitAmount);
+        st.setDouble(5, amount);
+        st.setString(6, data);
+        st.setLong(7, rescode);
+        st.setString(8, customerName);
+        st.execute();
+        st.close();
 
-
-
+        log.info("end push to database!");
     }
 
 

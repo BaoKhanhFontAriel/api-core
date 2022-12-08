@@ -6,10 +6,11 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.sun.org.slf4j.internal.Logger;
-import com.sun.org.slf4j.internal.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.example.Model.Customer;
 import org.example.Model.CustomerRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -17,6 +18,7 @@ import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
+@Slf4j
 public class ApiSender {
     Logger logger = LoggerFactory.getLogger(ApiSender.class);
     private static final String EXCHANGE_NAME = "exchange_info";
@@ -24,6 +26,7 @@ public class ApiSender {
 
     private static final SecureRandom secureRandom = new SecureRandom(); //threadsafe
     private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder(); //threadsafe
+    private static final String ROUTING_KEY = "info";
 
 
     public void sendToCore(String data){
@@ -50,7 +53,7 @@ public class ApiSender {
                     .build();
 
             // publish messgage
-            channel.basicPublish(EXCHANGE_NAME, QUEUE_NAME, props, message.getBytes("UTF-8"));
+            channel.basicPublish(EXCHANGE_NAME, ROUTING_KEY, props, message.getBytes("UTF-8"));
 
 
 //            channel.exchangeDeclare(EXCHANGE_NAME, "");

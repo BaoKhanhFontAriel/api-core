@@ -26,7 +26,7 @@ public class OracleConnect {
             conn = DriverManager.getConnection(dbURL, username, password);
 
             if (conn != null) {
-                System.out.println("Connect succesful!");
+                System.out.println("Connect to oracle succesful!");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
