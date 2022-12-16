@@ -1,4 +1,4 @@
-package org.example.Model;
+package org.example.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,5 +7,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class CustomerRequest {
     private  String token;
-    private  String json;
+    private  String data;
 }
